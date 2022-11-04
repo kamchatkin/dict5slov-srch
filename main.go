@@ -19,9 +19,8 @@ const LENGTH = 5
 
 // RunesStruct руны поиска точного положения
 type RunesStruct struct {
-	Rune0, Rune1, Rune2, Rune3, Rune4 rune
-	Values                            [LENGTH]rune
-	Searchable                        bool
+	Values     [LENGTH]rune
+	Searchable bool
 }
 
 // RunesStructConstructor конструктор RunesStruct
@@ -36,18 +35,12 @@ func RunesStructConstructor(letter0, letter1, letter2, letter3, letter4 *string)
 		return []rune(s)[0]
 	}
 
-	r.Rune0 = strToRune(*letter0)
-	r.Rune1 = strToRune(*letter1)
-	r.Rune2 = strToRune(*letter2)
-	r.Rune3 = strToRune(*letter3)
-	r.Rune4 = strToRune(*letter4)
-
 	r.Values = [LENGTH]rune{
-		r.Rune0,
-		r.Rune1,
-		r.Rune2,
-		r.Rune3,
-		r.Rune4}
+		strToRune(*letter0),
+		strToRune(*letter1),
+		strToRune(*letter2),
+		strToRune(*letter3),
+		strToRune(*letter4)}
 
 	// будем искать отдельные буквы в словах?
 	for _, rn := range r.Values {
@@ -94,35 +87,31 @@ func init() {
 var Words []string
 
 type FoundedRunsRegedit struct {
-	q int
-	f map[rune]bool
-}
-
-func (fr *FoundedRunsRegedit) Quantity() int {
-	return fr.q
+	quantity int
+	found    map[rune]bool
 }
 
 func (fr *FoundedRunsRegedit) Clean() {
-	fr.q = 0
-	fr.f = map[rune]bool{}
+	fr.quantity = 0
+	fr.found = map[rune]bool{}
 }
 
 func (fr *FoundedRunsRegedit) Found(r rune) {
-	if _, ok := fr.f[r]; ok {
+	if _, ok := fr.found[r]; ok {
 		return
 	}
 
-	fr.f[r] = true
-	fr.q++
+	fr.found[r] = true
+	fr.quantity++
 }
 
 func main() {
 	fmt.Printf("\nУсловия поиска\n1 - %s\n2 - %s\n3 - %s\n4 - %s\n5 - %s\nвключая: (%d) %s\nисключая: (%d) %s\n",
-		RuneToString(Runes.Rune0),
-		RuneToString(Runes.Rune1),
-		RuneToString(Runes.Rune2),
-		RuneToString(Runes.Rune3),
-		RuneToString(Runes.Rune4),
+		RuneToString(Runes.Values[0]),
+		RuneToString(Runes.Values[1]),
+		RuneToString(Runes.Values[2]),
+		RuneToString(Runes.Values[3]),
+		RuneToString(Runes.Values[4]),
 		len(runesIncluded),
 		SliceOfRunesToString(runesIncluded),
 		len(runesExcluded),
@@ -202,7 +191,7 @@ func main() {
 					}
 				}
 			}
-			if FoundedRuns.Quantity() != quantityRunesIncluded {
+			if FoundedRuns.quantity != quantityRunesIncluded {
 				continue
 			}
 		}
