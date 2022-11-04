@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
+	"time"
 )
 
 const DictFile = "dict.txt"
@@ -91,11 +93,6 @@ type FoundedRunsRegedit struct {
 	found    map[rune]bool
 }
 
-func (fr *FoundedRunsRegedit) Clean() {
-	fr.quantity = 0
-	fr.found = map[rune]bool{}
-}
-
 func (fr *FoundedRunsRegedit) Found(r rune) {
 	if _, ok := fr.found[r]; ok {
 		return
@@ -123,89 +120,112 @@ func main() {
 		log.Panicf("не удалось прочитать файл словаря %s", DictFile)
 	}
 
+	timeStart := time.Now()
+
+	wg := sync.WaitGroup{}
+
 	scanner := bufio.NewScanner(dict)
 	quantityRunesIncluded := len(runesIncluded)
 	quantityRunesExcluded := len(runesExcluded)
 	for scanner.Scan() {
-		text := scanner.Text()
-		word := []rune(text)
-		if len(word) != LENGTH {
-			log.Fatalf("В словае найдено слово состоящее не из 5 букв %s", word)
-		}
+		go func(text string) {
+			wg.Add(1)
 
-		// был ли осуществляен поиск фактически
-		searchState := false
+			word := []rune(text)
+			if len(word) != LENGTH {
+				wg.Done()
+				return
+				//log.Fatalf("В словае найдено слово состоящее не из 5 букв %s", word)
+			}
 
-		// сначала исключаем слово
-		if quantityRunesExcluded > 0 {
-			searchState = true
-			matchExcluded := false
-			for _, r := range word {
-				for _, er := range runesExcluded {
-					if r == er {
-						matchExcluded = true
+			// был ли осуществляен поиск фактически
+			searchState := false
+
+			// сначала исключаем слово
+			if quantityRunesExcluded > 0 {
+				searchState = true
+				matchExcluded := false
+				for _, r := range word {
+					for _, er := range runesExcluded {
+						if r == er {
+							matchExcluded = true
+							break
+						}
+					}
+					if matchExcluded {
 						break
 					}
 				}
 				if matchExcluded {
-					break
+					wg.Done()
+					return
+					//continue
 				}
 			}
-			if matchExcluded {
-				continue
-			}
-		}
 
-		// дальше ищем угаданное слово
-		if Runes.Searchable {
-			searchState = true
+			// дальше ищем угаданные буквы
+			if Runes.Searchable {
+				searchState = true
 
-			// количество букв для поиска
-			found := 0
-			// количество соответствующих букв
-			equal := 0
-			for idx, r := range Runes.Values {
-				if r != DefaultRune {
-					found++
-					if word[idx] == r {
-						equal++
+				// количество букв для поиска
+				found := 0
+				// количество соответствующих букв
+				equal := 0
+				for idx, r := range Runes.Values {
+					if r != DefaultRune {
+						found++
+						if word[idx] == r {
+							equal++
+						}
 					}
 				}
-			}
 
-			if found != equal {
-				continue
-			}
-		}
-
-		// проверяем наличие букв угаданных без точного положения в слове
-		if quantityRunesIncluded > 0 {
-			searchState = true
-			FoundedRuns := FoundedRunsRegedit{}
-			FoundedRuns.Clean()
-			for _, r := range word {
-				for _, ir := range runesIncluded {
-					if r == ir {
-						FoundedRuns.Found(r)
-						break
-					}
+				if found != equal {
+					wg.Done()
+					return
+					//continue
 				}
 			}
-			if FoundedRuns.quantity != quantityRunesIncluded {
-				continue
-			}
-		}
 
-		if searchState {
-			Words = append(Words, text)
-		}
+			// проверяем наличие букв угаданных без точного положения в слове
+			if quantityRunesIncluded > 0 {
+				searchState = true
+				FoundedRuns := FoundedRunsRegedit{}
+				FoundedRuns.found = make(map[rune]bool)
+				for _, r := range word {
+					for _, ir := range runesIncluded {
+						if r == ir {
+							FoundedRuns.Found(r)
+							break
+						}
+					}
+				}
+				if FoundedRuns.quantity != quantityRunesIncluded {
+					wg.Done()
+					return
+					//continue
+				}
+
+			}
+
+			if searchState {
+				Words = append(Words, text)
+			}
+
+			wg.Done()
+		}(scanner.Text())
 	}
+
+	wg.Wait()
 
 	if len(Words) > 0 {
 		fmt.Printf("\nПодходят слова:\n%s\n\n", strings.Join(Words, "\n"))
 	} else {
 		fmt.Print("\nНичего не найдено\n\n")
 	}
+
+	elapsed := time.Since(timeStart)
+	log.Printf("Binomial took %s", elapsed)
 }
 
 func SliceOfRunesToString(rs []rune) string {
