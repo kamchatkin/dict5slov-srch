@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 const DictFile = "dict.txt"
@@ -123,6 +124,8 @@ func main() {
 		log.Panicf("не удалось прочитать файл словаря %s", DictFile)
 	}
 
+	timeStart := time.Now()
+
 	scanner := bufio.NewScanner(dict)
 	quantityRunesIncluded := len(runesIncluded)
 	quantityRunesExcluded := len(runesExcluded)
@@ -206,6 +209,9 @@ func main() {
 	} else {
 		fmt.Print("\nНичего не найдено\n\n")
 	}
+
+	elapsed := time.Since(timeStart)
+	log.Printf("Binomial took %s", elapsed)
 }
 
 func SliceOfRunesToString(rs []rune) string {
