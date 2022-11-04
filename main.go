@@ -130,10 +130,10 @@ func main() {
 	for scanner.Scan() {
 		go func(text string) {
 			wg.Add(1)
+			defer wg.Done()
 
 			word := []rune(text)
 			if len(word) != LENGTH {
-				wg.Done()
 				return
 				//log.Fatalf("В словае найдено слово состоящее не из 5 букв %s", word)
 			}
@@ -157,7 +157,6 @@ func main() {
 					}
 				}
 				if matchExcluded {
-					wg.Done()
 					return
 					//continue
 				}
@@ -181,7 +180,6 @@ func main() {
 				}
 
 				if found != equal {
-					wg.Done()
 					return
 					//continue
 				}
@@ -201,7 +199,6 @@ func main() {
 					}
 				}
 				if FoundedRuns.quantity != quantityRunesIncluded {
-					wg.Done()
 					return
 					//continue
 				}
@@ -212,7 +209,6 @@ func main() {
 				Words = append(Words, text)
 			}
 
-			wg.Done()
 		}(scanner.Text())
 	}
 
