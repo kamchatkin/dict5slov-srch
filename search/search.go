@@ -19,7 +19,7 @@ const IncExcMaxLength = 25
 
 // query параметры запроса для поиска
 type query struct {
-	Single           [5]rune
+	Single           [LENGTH]rune
 	SingleSearchable bool
 
 	Include           []rune
@@ -35,6 +35,29 @@ var str2rune = func(s string) rune {
 	}
 
 	return []rune(s)[0]
+}
+
+var rune2str = func(r rune) string {
+	if r == DefaultRune {
+		return DefaultString
+	}
+
+	return string(r)
+}
+
+var IncEnc2Runes = func(str string) []rune {
+	var result []rune
+	iterate := 0
+	for _, r := range []rune(str) {
+		if iterate >= IncExcMaxLength {
+			break
+		}
+		iterate++
+
+		result = append(result, r)
+	}
+
+	return result
 }
 
 func QueryConstructor(s0, s1, s2, s3, s4, inc, exc string) *query {
@@ -55,21 +78,6 @@ func QueryConstructor(s0, s1, s2, s3, s4, inc, exc string) *query {
 		}
 	}
 
-	var IncEnc2Runes = func(str string) []rune {
-		var result []rune
-		iterate := 0
-		for _, r := range []rune(str) {
-			if iterate >= IncExcMaxLength {
-				break
-			}
-			iterate++
-
-			result = append(result, r)
-		}
-
-		return result
-	}
-
 	q.Include = IncEnc2Runes(inc)
 	q.Exclude = IncEnc2Runes(exc)
 
@@ -86,11 +94,11 @@ func WebSearch(q *query) *[]string {
 
 func ConsoleSearch(q *query) {
 	fmt.Printf("\nУсловия поиска\n1 - %s\n2 - %s\n3 - %s\n4 - %s\n5 - %s\nвключая: (%d) %s\nисключая: (%d) %s\n",
-		runeToString(q.Single[0]),
-		runeToString(q.Single[1]),
-		runeToString(q.Single[2]),
-		runeToString(q.Single[3]),
-		runeToString(q.Single[4]),
+		rune2str(q.Single[0]),
+		rune2str(q.Single[1]),
+		rune2str(q.Single[2]),
+		rune2str(q.Single[3]),
+		rune2str(q.Single[4]),
 		len(q.Include),
 		sliceOfRunesToString(q.Include),
 		len(q.Exclude),
@@ -221,12 +229,4 @@ func sliceOfRunesToString(rs []rune) string {
 	}
 
 	return strings.Join(out, ", ")
-}
-
-func runeToString(r rune) string {
-	if r == DefaultRune {
-		return ""
-	}
-
-	return string(r)
 }

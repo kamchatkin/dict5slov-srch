@@ -14,7 +14,7 @@
 ## Как использовать
 
 ````
-go build .
+make build
 ./dict5slov-srch -1 б -i укв -e ж
 ````
 
