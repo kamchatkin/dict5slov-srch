@@ -3,20 +3,20 @@ package web
 import (
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"kamchatkin.ru/dict5slov-srch/search"
-	"log"
 	"net/http"
 )
 
 //go:embed index.html
 var IndexPage string
 
-func indexHandler(w http.ResponseWriter, _ *http.Request) {
-	_, err := fmt.Fprintf(w, IndexPage)
-	if err != nil {
-		log.Panic(err)
-	}
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "https://github.com/kamchatkin/dict5slov-srch", http.StatusTemporaryRedirect)
+
+	//_, err := fmt.Fprintf(w, IndexPage)
+	//if err != nil {
+	//	log.Panic(err)
+	//}
 }
 
 func searchHandler(w http.ResponseWriter, r *http.Request) {

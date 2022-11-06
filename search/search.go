@@ -46,6 +46,10 @@ var rune2str = func(r rune) string {
 }
 
 var IncEnc2Runes = func(str string) []rune {
+	if str == DefaultString {
+		return []rune{}
+	}
+
 	var result []rune
 	iterate := 0
 	for _, r := range []rune(str) {
@@ -79,7 +83,10 @@ func QueryConstructor(s0, s1, s2, s3, s4, inc, exc string) *query {
 	}
 
 	q.Include = IncEnc2Runes(inc)
+	q.IncludeSearchable = len(q.Include) > 0
+
 	q.Exclude = IncEnc2Runes(exc)
+	q.ExcludeSearchable = len(q.Exclude) > 0
 
 	return &q
 }
@@ -145,7 +152,7 @@ func search(q *query) *[]string {
 		text := scanner.Text()
 		word := []rune(text)
 		if len(word) != LENGTH {
-			log.Fatalf("В словае найдено слово состоящее не из 5 букв %s", text)
+			log.Fatalf("В словаре найдено слово состоящее не из %d букв %s", LENGTH, text)
 		}
 
 		// был ли осуществлен поиск фактически
