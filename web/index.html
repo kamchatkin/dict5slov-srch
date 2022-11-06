@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>wordle hack</title>
+
+    <style rel="stylesheet">
+
+        .page {
+            max-width: 600px;
+            margin: 0 auto;
+            font: normal 10pt Arial;
+            cursor: default;
+
+            margin-top: 100px;
+        }
+
+        input {
+            /*padding: 3px 7px;*/
+            width: 100px;
+        }
+
+        input.green {
+            width: 50px;
+        }
+
+        .yellow, .gray, .srch {
+            margin-top: 10px;
+        }
+
+        .green {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            align-items: center;
+            width: calc(50px * 5 + 4px * 4 + 50px);
+
+            /*background-color: snow;*/
+        }
+
+        .green .wrap {
+            flex-grow: 0;
+            /*width: 50px;*/
+            /*height: 50px;*/
+        }
+
+        .green .wrap input {
+            flex-basis: content;
+            width: 50px;
+            height: 50px;
+            font-size: 30pt;
+            text-align: center;
+            text-transform: uppercase;
+
+            border-radius: 0;
+            outline: none;
+            color: #333;
+            border: 3px solid gray;
+        }
+
+        .green .wrap input.filled {
+            border-color: rgb(106, 170, 100);
+            background-color: rgb(106, 170, 100);
+            color: white;
+        }
+
+        .yellow {
+            margin-top: 50px;
+        }
+
+        .title {
+            font-weight: bold;
+        }
+
+        button {
+            padding: 3px 7px;
+            cursor: pointer;
+        }
+
+        #results {
+            padding-top: 10px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+    <div class="green">
+        <div class="wrap">
+            <input type="text" id="letter0" class="green" maxlength="1" tabindex="1">
+        </div>
+        <div class="wrap">
+            <input type="text" id="letter1" class="green" maxlength="1" tabindex="2">
+        </div>
+        <div class="wrap">
+            <input type="text" id="letter2" class="green" maxlength="1" tabindex="3">
+        </div>
+        <div class="wrap">
+            <input type="text" id="letter3" class="green" maxlength="1" tabindex="4">
+        </div>
+        <div class="wrap">
+            <input type="text" id="letter4" class="green" maxlength="1" tabindex="5">
+        </div>
+    </div>
+
+
+    <div class="yellow">
+        <div class="title">Желтые буквы. Угаданы, но не в том месте</div>
+
+        <input type="text" id="lettersI" tabindex="6" maxlength="25">
+    </div>
+
+    <div class="gray">
+        <div class="title">Серые буквы. Не встречаются в загаданном слове</div>
+
+        <input type="text" id="lettersE" tabindex="7" maxlength="25">
+    </div>
+
+    <div class="srch">
+        <button type="button" id="button" tabindex="8">Найти слова</button>
+    </div>
+
+
+    <div id="results">
+    </div>
+
+</div>
+
+<script type="application/javascript">
+    (function () {
+        let letter0 = document.getElementById('letter0'),
+            letter1 = document.getElementById('letter1'),
+            letter2 = document.getElementById('letter2'),
+            letter3 = document.getElementById('letter3'),
+            letter4 = document.getElementById('letter4'),
+            lettersI = document.getElementById('lettersI'),
+            lettersE = document.getElementById('lettersE'),
+            button = document.getElementById('button'),
+            results = document.getElementById('results');
+
+        // render - отрисовка списка результатов
+        function render(words_list) {
+            let html = '';
+            if (words_list.length > 0) {
+                html = `<ol><li>${words_list.join('</li><li>')}</li></ol>`;
+            }
+
+            results.innerHTML = html;
+        }
+
+        let filled = 'filled'
+        let re = new RegExp('^([а-я])$')
+        let event_handler = function (e) {
+            let name = e.key.toString().toLowerCase()
+            if (!re.test(name)) {
+                e.preventDefault()
+                e.stopPropagation()
+                return
+            }
+
+            e.target.classList.add(filled);
+            let id = e.target.getAttribute('id');
+            let num = Number(id.replace('letter', '')) + 1
+            let inputs = document.getElementsByTagName('input')
+            for (let c = 0, il = inputs.length; c < il; c++) {
+                if (inputs[c].getAttribute('id') === 'letter' + num) {
+                    setTimeout((elm=>{return function(){elm.focus()}})(inputs[c]), 50)
+                    break;
+                }
+            }
+
+        };
+
+        let event = 'keypress'
+        letter0.addEventListener(event, event_handler)
+        letter1.addEventListener(event, event_handler)
+        letter2.addEventListener(event, event_handler)
+        letter3.addEventListener(event, event_handler)
+        letter4.addEventListener(event, event_handler)
+
+        let event_keyup = 'keyup';
+        let keyup_handler = function(e){
+            if(e.key.toLowerCase() === 'backspace') {
+                if(e.target.value === "") {
+                    e.target.classList.remove(filled)
+                }
+            }
+        };
+
+        letter0.addEventListener(event_keyup, keyup_handler)
+        letter1.addEventListener(event_keyup, keyup_handler)
+        letter2.addEventListener(event_keyup, keyup_handler)
+        letter3.addEventListener(event_keyup, keyup_handler)
+        letter4.addEventListener(event_keyup, keyup_handler)
+
+
+        button.addEventListener('click', function () {
+            let params = new URLSearchParams({
+                'letter0': letter0.value,
+                'letter1': letter1.value,
+                'letter2': letter2.value,
+                'letter3': letter3.value,
+                'letter4': letter4.value,
+                'lettersI': lettersI.value,
+                'lettersE': lettersE.value
+            })
+
+            fetch('/srch?' + params).then((data) => {
+                return data.json()
+            }).then((data) => {
+                render(data);
+            })
+        });
+
+        render([]);
+    })();
+</script>
+</body>
+</html>
