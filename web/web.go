@@ -24,10 +24,15 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	params := search.QueryConstructor(
 		q.Get("letter0"),
+		q.Get("ne0"),
 		q.Get("letter1"),
+		q.Get("ne1"),
 		q.Get("letter2"),
+		q.Get("ne2"),
 		q.Get("letter3"),
+		q.Get("ne3"),
 		q.Get("letter4"),
+		q.Get("ne44"),
 		q.Get("lettersI"),
 		q.Get("lettersE"))
 

@@ -19,13 +19,44 @@ const IncExcMaxLength = 25
 
 // query параметры запроса для поиска
 type query struct {
-	Single           [LENGTH]rune
+	// Single зеленые буквы
+	Single [LENGTH]rune
+	// SingleSearchable искать по зеленым буквам
 	SingleSearchable bool
 
-	Include           []rune
+	// Not0 желтые буквы, не первая буква в слове
+	Not0 []rune
+	// Not0Searchable искать по первой букве?
+	Not0Searchable bool
+
+	// Not1 желтые буквы, не вторая буква в слове
+	Not1 []rune
+	// Not1Searchable искать по второй букве?
+	Not1Searchable bool
+
+	// Not2 желтые буквы, не третья буква в слове
+	Not2 []rune
+	// Not2Searchable искать по третьей букве?
+	Not2Searchable bool
+
+	// Not3 желтые буквы, не четвертая буква в слове
+	Not3 []rune
+	// Not3Searchable искать по четвертой букве?
+	Not3Searchable bool
+
+	// Not4 желтые буквы, не пятая буква в слове
+	Not4 []rune
+	// Not4Searchable искать по пятой букве?
+	Not4Searchable bool
+
+	// Include буквы которые встречаются в слове, но неизвестно точное положение
+	Include []rune
+	// IncludeSearchable искать по встречающимся буквам?
 	IncludeSearchable bool
 
-	Exclude           []rune
+	// Exclude буквы которые точно не встречаются в слове
+	Exclude []rune
+	// ExcludeSearchable искать по буквам которые точно не встречаются?
 	ExcludeSearchable bool
 }
 
@@ -45,7 +76,7 @@ var rune2str = func(r rune) string {
 	return string(r)
 }
 
-var IncEnc2Runes = func(str string) []rune {
+var str2runes = func(str string) []rune {
 	if str == DefaultString {
 		return []rune{}
 	}
@@ -64,7 +95,7 @@ var IncEnc2Runes = func(str string) []rune {
 	return result
 }
 
-func QueryConstructor(s0, s1, s2, s3, s4, inc, exc string) *query {
+func QueryConstructor(s0, not0, s1, not1, s2, not2, s3, not3, s4, not4, inc, exc string) *query {
 	q := query{
 		Single: [LENGTH]rune{
 			str2rune(s0),
@@ -82,10 +113,25 @@ func QueryConstructor(s0, s1, s2, s3, s4, inc, exc string) *query {
 		}
 	}
 
-	q.Include = IncEnc2Runes(inc)
+	q.Not0 = str2runes(not0)
+	q.Not0Searchable = len(q.Not0) > 0
+
+	q.Not1 = str2runes(not1)
+	q.Not1Searchable = len(q.Not1) > 0
+
+	q.Not2 = str2runes(not2)
+	q.Not2Searchable = len(q.Not2) > 0
+
+	q.Not3 = str2runes(not3)
+	q.Not3Searchable = len(q.Not3) > 0
+
+	q.Not4 = str2runes(not4)
+	q.Not4Searchable = len(q.Not4) > 0
+
+	q.Include = str2runes(inc)
 	q.IncludeSearchable = len(q.Include) > 0
 
-	q.Exclude = IncEnc2Runes(exc)
+	q.Exclude = str2runes(exc)
 	q.ExcludeSearchable = len(q.Exclude) > 0
 
 	return &q
@@ -115,7 +161,7 @@ func ConsoleSearch(q *query) {
 	words := search(q)
 
 	if len(*words) > 0 {
-		fmt.Printf("\nПодходят слова:\n%s\n\n", strings.Join(*words, "\n"))
+		fmt.Printf("\nПодходят слова (%d):\n%s\n\n", len(*words), strings.Join(*words, "\n"))
 	} else {
 		fmt.Print("\nНичего не найдено\n\n")
 	}
@@ -174,6 +220,66 @@ func search(q *query) *[]string {
 				}
 			}
 			if matchExcluded {
+				continue
+			}
+		}
+
+		if q.Not0Searchable {
+			match := false
+			for _, r := range q.Not0 {
+				if r == word[0] {
+					match = true
+				}
+			}
+			if match {
+				continue
+			}
+		}
+
+		if q.Not1Searchable {
+			match := false
+			for _, r := range q.Not1 {
+				if r == word[1] {
+					match = true
+				}
+			}
+			if match {
+				continue
+			}
+		}
+
+		if q.Not2Searchable {
+			match := false
+			for _, r := range q.Not2 {
+				if r == word[2] {
+					match = true
+				}
+			}
+			if match {
+				continue
+			}
+		}
+
+		if q.Not3Searchable {
+			match := false
+			for _, r := range q.Not3 {
+				if r == word[3] {
+					match = true
+				}
+			}
+			if match {
+				continue
+			}
+		}
+
+		if q.Not4Searchable {
+			match := false
+			for _, r := range q.Not4 {
+				if r == word[4] {
+					match = true
+				}
+			}
+			if match {
 				continue
 			}
 		}
