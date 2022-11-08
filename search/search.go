@@ -24,30 +24,8 @@ type query struct {
 	// SingleSearchable искать по зеленым буквам
 	SingleSearchable bool
 
-	// Not0 желтые буквы, не первая буква в слове
-	Not0 []rune
-	// Not0Searchable искать по первой букве?
-	Not0Searchable bool
-
-	// Not1 желтые буквы, не вторая буква в слове
-	Not1 []rune
-	// Not1Searchable искать по второй букве?
-	Not1Searchable bool
-
-	// Not2 желтые буквы, не третья буква в слове
-	Not2 []rune
-	// Not2Searchable искать по третьей букве?
-	Not2Searchable bool
-
-	// Not3 желтые буквы, не четвертая буква в слове
-	Not3 []rune
-	// Not3Searchable искать по четвертой букве?
-	Not3Searchable bool
-
-	// Not4 желтые буквы, не пятая буква в слове
-	Not4 []rune
-	// Not4Searchable искать по пятой букве?
-	Not4Searchable bool
+	// желтые буквы, не N буква в слове
+	Not [][]rune
 
 	// Include буквы которые встречаются в слове, но неизвестно точное положение
 	Include []rune
@@ -113,20 +91,11 @@ func QueryConstructor(s0, not0, s1, not1, s2, not2, s3, not3, s4, not4, inc, exc
 		}
 	}
 
-	q.Not0 = str2runes(not0)
-	q.Not0Searchable = len(q.Not0) > 0
-
-	q.Not1 = str2runes(not1)
-	q.Not1Searchable = len(q.Not1) > 0
-
-	q.Not2 = str2runes(not2)
-	q.Not2Searchable = len(q.Not2) > 0
-
-	q.Not3 = str2runes(not3)
-	q.Not3Searchable = len(q.Not3) > 0
-
-	q.Not4 = str2runes(not4)
-	q.Not4Searchable = len(q.Not4) > 0
+	q.Not = append(q.Not, str2runes(not0))
+	q.Not = append(q.Not, str2runes(not1))
+	q.Not = append(q.Not, str2runes(not2))
+	q.Not = append(q.Not, str2runes(not3))
+	q.Not = append(q.Not, str2runes(not4))
 
 	q.Include = str2runes(inc)
 	q.IncludeSearchable = len(q.Include) > 0
@@ -224,64 +193,27 @@ func search(q *query) *[]string {
 			}
 		}
 
-		if q.Not0Searchable {
-			match := false
-			for _, r := range q.Not0 {
+		// поиск отрицаний. N буква не один из
+		match := false
+		for _, runes := range q.Not {
+			if len(runes) < 1 {
+				continue
+			}
+
+			searchState = true
+			for _, r := range runes {
 				if r == word[0] {
 					match = true
+					break
 				}
 			}
+
 			if match {
-				continue
+				break
 			}
 		}
-
-		if q.Not1Searchable {
-			match := false
-			for _, r := range q.Not1 {
-				if r == word[1] {
-					match = true
-				}
-			}
-			if match {
-				continue
-			}
-		}
-
-		if q.Not2Searchable {
-			match := false
-			for _, r := range q.Not2 {
-				if r == word[2] {
-					match = true
-				}
-			}
-			if match {
-				continue
-			}
-		}
-
-		if q.Not3Searchable {
-			match := false
-			for _, r := range q.Not3 {
-				if r == word[3] {
-					match = true
-				}
-			}
-			if match {
-				continue
-			}
-		}
-
-		if q.Not4Searchable {
-			match := false
-			for _, r := range q.Not4 {
-				if r == word[4] {
-					match = true
-				}
-			}
-			if match {
-				continue
-			}
+		if match {
+			continue
 		}
 
 		// дальше ищем слова с угаданными буквами
