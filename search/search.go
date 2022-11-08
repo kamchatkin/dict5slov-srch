@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 )
 
 //go:embed dict.txt
@@ -127,10 +128,14 @@ func ConsoleSearch(q *query) {
 		sliceOfRunesToString(q.Exclude),
 	)
 
+	timeStart := time.Now()
 	words := search(q)
 
 	if len(*words) > 0 {
-		fmt.Printf("\nПодходят слова (%d):\n%s\n\n", len(*words), strings.Join(*words, "\n"))
+		fmt.Printf("\nПодходят слова (%d):\n%s\n\nПотребовалось на поиск: %s\n\n",
+			len(*words),
+			strings.Join(*words, "\n"),
+			time.Since(timeStart))
 	} else {
 		fmt.Print("\nНичего не найдено\n\n")
 	}
@@ -158,8 +163,6 @@ func (fr *FoundedRunsRegedit) Found(r rune) {
 
 func search(q *query) *[]string {
 	var words []string
-
-	//timeStart := time.Now()
 
 	scanner := bufio.NewScanner(strings.NewReader(dict))
 	quantityRunesIncluded := len(q.Include)
@@ -195,14 +198,14 @@ func search(q *query) *[]string {
 
 		// поиск отрицаний. N буква не один из
 		match := false
-		for _, runes := range q.Not {
+		for runeNum, runes := range q.Not {
 			if len(runes) < 1 {
 				continue
 			}
 
 			searchState = true
 			for _, r := range runes {
-				if r == word[0] {
+				if r == word[runeNum] {
 					match = true
 					break
 				}
@@ -262,9 +265,6 @@ func search(q *query) *[]string {
 	}
 
 	return &words
-
-	//elapsed := time.Since(timeStart)
-	//log.Printf("Binomial took %s", elapsed)
 }
 
 func sliceOfRunesToString(rs []rune) string {
