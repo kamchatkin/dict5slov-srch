@@ -137,7 +137,7 @@ func ConsoleSearch(q *query) {
 			strings.Join(*words, "\n"),
 			time.Since(timeStart))
 	} else {
-		fmt.Print("\nНичего не найдено\n\n")
+		fmt.Printf("\nНичего не найдено за %s\n\n", time.Since(timeStart))
 	}
 
 }

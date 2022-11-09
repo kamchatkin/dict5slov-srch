@@ -1,3 +1,3 @@
-module kamchatkin.ru/dict5slov-srch
+module kamchatkin.ru/wordle-hack
 
 go 1.19

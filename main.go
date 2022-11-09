@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"kamchatkin.ru/dict5slov-srch/search"
-	"kamchatkin.ru/dict5slov-srch/web"
+	"kamchatkin.ru/wordle-hack/search"
+	"kamchatkin.ru/wordle-hack/web"
 	"os"
 )
 

@@ -3,7 +3,7 @@ package web
 import (
 	_ "embed"
 	"encoding/json"
-	"kamchatkin.ru/dict5slov-srch/search"
+	"kamchatkin.ru/wordle-hack/search"
 	"net/http"
 )
 
@@ -11,7 +11,7 @@ import (
 var IndexPage string
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "https://github.com/kamchatkin/dict5slov-srch", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "https://github.com/kamchatkin/wordle-hack", http.StatusTemporaryRedirect)
 
 	//_, err := fmt.Fprintf(w, IndexPage)
 	//if err != nil {
