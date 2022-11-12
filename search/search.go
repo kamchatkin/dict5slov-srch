@@ -3,8 +3,8 @@ package search
 import (
 	"bufio"
 	_ "embed"
+	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 )
@@ -47,14 +47,6 @@ var str2rune = func(s string) rune {
 	return []rune(s)[0]
 }
 
-var rune2str = func(r rune) string {
-	if r == DefaultRune {
-		return DefaultString
-	}
-
-	return string(r)
-}
-
 var str2runes = func(str string) []rune {
 	if str == DefaultString {
 		return []rune{}
@@ -74,7 +66,8 @@ var str2runes = func(str string) []rune {
 	return result
 }
 
-func QueryConstructor(s0, not0, s1, not1, s2, not2, s3, not3, s4, not4, inc, exc string) *query {
+// QueryConstructor собираем параметры поиска в единый объект
+func QueryConstructor(s0, s1, s2, s3, s4, not0, not1, not2, not3, not4, exc string) (*query, error) {
 	q := query{
 		Single: [LENGTH]rune{
 			str2rune(s0),
@@ -98,58 +91,116 @@ func QueryConstructor(s0, not0, s1, not1, s2, not2, s3, not3, s4, not4, inc, exc
 	q.Not = append(q.Not, str2runes(not3))
 	q.Not = append(q.Not, str2runes(not4))
 
-	q.Include = str2runes(inc)
+	// добавляем к q.Include уникальный список букв из q.Not
+	includeMap := map[rune]bool{}
+	for _, runesSlice := range q.Not {
+		for _, r := range runesSlice {
+			if _, ok := includeMap[r]; !ok {
+				includeMap[r] = true
+				q.Include = append(q.Include, r)
+			}
+		}
+	}
+	if len(q.Include) > 5 {
+		return &query{}, errors.New("В поиске по угаданным буквам с неточным положением не может быть более 5 разных букв")
+	}
 	q.IncludeSearchable = len(q.Include) > 0
 
 	q.Exclude = str2runes(exc)
 	q.ExcludeSearchable = len(q.Exclude) > 0
 
-	return &q
+	// поиск противоречащих параметров поиска
+	if q.ExcludeSearchable && (q.IncludeSearchable || q.SingleSearchable) {
+		var incErr []rune
+		var singleErr []rune
+		for _, re := range q.Exclude {
+			for _, ri := range q.Include {
+				if re == ri {
+					incErr = append(incErr, re)
+				}
+			}
+			for _, rs := range q.Single {
+				if re == rs {
+					singleErr = append(singleErr, re)
+				}
+			}
+		}
+
+		errText := ""
+		if len(incErr) > 0 {
+			errText = fmt.Sprintf("\n\tв исключении и в поиске по неточному положению встречаеися буква: %s", string(incErr))
+		}
+
+		if len(singleErr) > 0 {
+			errText = fmt.Sprintf("\n\tв исключении и в поиске с точным положением встречаеися буква: %s", string(singleErr))
+		}
+
+		if errText != "" {
+			return &query{}, errors.New(fmt.Sprintf("%s\n\n", errText))
+		}
+	}
+
+	return &q, nil
 }
 
+// DefaultRune нулевая руна, для пропуска поиска
 const DefaultRune = 0
 
+// DefaultString пустая строка для игнорирования в поиске
 const DefaultString = ""
 
+// WebSearch результаты поиска в json
 func WebSearch(q *query) *[]string {
 	return search(q)
 }
 
+// ConsoleSearch результаты поиска в терминал
 func ConsoleSearch(q *query) {
-	fmt.Printf("\nУсловия поиска\n1 - %s\n2 - %s\n3 - %s\n4 - %s\n5 - %s\nвключая: (%d) %s\nисключая: (%d) %s\n",
-		rune2str(q.Single[0]),
-		rune2str(q.Single[1]),
-		rune2str(q.Single[2]),
-		rune2str(q.Single[3]),
-		rune2str(q.Single[4]),
-		len(q.Include),
-		sliceOfRunesToString(q.Include),
-		len(q.Exclude),
-		sliceOfRunesToString(q.Exclude),
-	)
+	var tpl string
+
+	if q.SingleSearchable {
+		for idx, r := range q.Single {
+			if r != DefaultRune {
+				tpl = fmt.Sprintf("%d буква: %s\n", idx, string(r))
+			}
+		}
+	}
+
+	for idx, runesSlice := range q.Not {
+		length := len(runesSlice)
+		if length == 1 {
+			tpl += fmt.Sprintf("%d буква не: (%d) %s\n", idx+1, length, string(runesSlice))
+		} else if length > 1 {
+			tpl += fmt.Sprintf("%d буква не одна из: (%d) %s\n", idx+1, length, sliceOfRunesToString(runesSlice))
+		}
+	}
+
+	if q.IncludeSearchable {
+		tpl += fmt.Sprintf("Включая буквы: (%d) %s\n", len(q.Include), sliceOfRunesToString(q.Include))
+	}
+	if q.ExcludeSearchable {
+		tpl += fmt.Sprintf("Исключая буквы: (%d) %s\n\n", len(q.Exclude), sliceOfRunesToString(q.Exclude))
+	}
+
+	fmt.Println(tpl)
 
 	timeStart := time.Now()
 	words := search(q)
 
-	if len(*words) > 0 {
-		fmt.Printf("\nПодходят слова (%d):\n%s\n\nПотребовалось на поиск: %s\n\n",
-			len(*words),
-			strings.Join(*words, "\n"),
-			time.Since(timeStart))
-	} else {
+	if len(*words) < 1 {
 		fmt.Printf("\nНичего не найдено за %s\n\n", time.Since(timeStart))
+		return
 	}
 
+	fmt.Printf("\nПодходят слова (%d):\n%s\n\nПотребовалось на поиск: %s\n\n",
+		len(*words),
+		strings.Join(*words, "\n"),
+		time.Since(timeStart))
 }
 
 type FoundedRunsRegedit struct {
 	quantity int
 	found    map[rune]bool
-}
-
-func (fr *FoundedRunsRegedit) Clean() {
-	fr.quantity = 0
-	fr.found = map[rune]bool{}
 }
 
 func (fr *FoundedRunsRegedit) Found(r rune) {
@@ -161,6 +212,7 @@ func (fr *FoundedRunsRegedit) Found(r rune) {
 	fr.quantity++
 }
 
+// search поиск
 func search(q *query) *[]string {
 	var words []string
 
@@ -170,7 +222,7 @@ func search(q *query) *[]string {
 		text := scanner.Text()
 		word := []rune(text)
 		if len(word) != LENGTH {
-			log.Fatalf("В словаре найдено слово состоящее не из %d букв %s", LENGTH, text)
+			return &words
 		}
 
 		// был ли осуществлен поиск фактически
@@ -244,8 +296,7 @@ func search(q *query) *[]string {
 		// проверяем наличие букв угаданных без точного положения в слове
 		if q.IncludeSearchable {
 			searchState = true
-			FoundedRuns := FoundedRunsRegedit{}
-			FoundedRuns.Clean()
+			FoundedRuns := FoundedRunsRegedit{quantity: 0, found: make(map[rune]bool)}
 			for _, r := range word {
 				for _, ir := range q.Include {
 					if r == ir {
