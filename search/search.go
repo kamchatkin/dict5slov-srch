@@ -1,10 +1,13 @@
 package search
 
 import (
-	"bufio"
 	_ "embed"
+	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -37,7 +40,16 @@ type query struct {
 	Exclude []rune
 	// ExcludeSearchable искать по буквам которые точно не встречаются?
 	ExcludeSearchable bool
+
+	// Sort сортировка
+	Sort sortMethod
 }
+
+// sortMethod Типы
+type sortMethod string
+
+const SortAlphabet = sortMethod("alphabet")
+const SortWeight = sortMethod("weight")
 
 var str2rune = func(s string) rune {
 	if s == DefaultString {
@@ -212,17 +224,41 @@ func (fr *FoundedRunsRegedit) Found(r rune) {
 	fr.quantity++
 }
 
+// WordOfDict слово и его вес
+type WordOfDict struct {
+	Word   string
+	Weight int
+}
+
 // search поиск
 func search(q *query) *[]string {
-	var words []string
+	var words []WordOfDict
+	//var words []string
 
-	scanner := bufio.NewScanner(strings.NewReader(dict))
+	csvReader := csv.NewReader(strings.NewReader(dict))
+	csvReader.Comma = ';'
+	//scanner := bufio.NewScanner(strings.NewReader(dict))
 	quantityRunesIncluded := len(q.Include)
-	for scanner.Scan() {
-		text := scanner.Text()
+	for {
+		row, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			panic(fmt.Sprintf("Ошибка чтения словаря: %s", err))
+		}
+
+		text := row[0]
 		word := []rune(text)
+
+		weight, _ := strconv.Atoi(row[1])
+
+		//fmt.Println(weight)
+
+		//text := scanner.Text()
+		//word := []rune(text)
 		if len(word) != LENGTH {
-			return &words
+			continue
 		}
 
 		// был ли осуществлен поиск фактически
@@ -311,16 +347,36 @@ func search(q *query) *[]string {
 		}
 
 		if searchState {
-			words = append(words, text)
+			words = append(words, WordOfDict{Weight: weight, Word: text})
 		}
 	}
 
-	return &words
+	if q.Sort == SortAlphabet {
+		return sliceOfDictToSliceOfString(words)
+	}
+
+	sort.Slice(words, func(i, j int) bool {
+		return words[i].Weight > words[j].Weight
+	})
+
+	// сортировка по весу
+	return sliceOfDictToSliceOfString(words)
 }
 
-func sliceOfRunesToString(rs []rune) string {
+// sliceOfDictToSliceOfString
+func sliceOfDictToSliceOfString(words []WordOfDict) *[]string {
 	var out []string
-	for _, r := range rs {
+	for _, w := range words {
+		out = append(out, w.Word)
+	}
+
+	return &out
+}
+
+// sliceOfRunesToString
+func sliceOfRunesToString(runes []rune) string {
+	var out []string
+	for _, r := range runes {
 		out = append(out, string(r))
 	}
 
